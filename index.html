@@ -1,77 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="da">
 <head>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kasus AI</title>
-<link rel="icon" type="image/x-icon" href="icon.ico">
+<title>Kasus Ordbog</title>
+
 <link rel="stylesheet" href="style.css">
 
 </head>
 
 <body>
 
-<div id="login">
-<h2>Enter Password</h2>
-<input id="password" type="password">
-<button onclick="login()">Enter</button>
-</div>
+<div class="container">
 
-<div id="app" style="display:none;">
-
-<h1>Kasus AI</h1>
-<p class="subtitle">Analyze grammatical case (German, Latin, Danish)</p>
-
-<div id="onlineCount">0 users online</div>
-
-<div id="quoteBox">
-<h3>Quote of the Day</h3>
-
-<p id="quoteText">
-Indtil videre, ingen ny quote...
+<h1>Kasus Ordbog</h1>
+<p class="subtitle">
+Indtast et ord eller en sætning (tysk, latin eller dansk)
 </p>
 
-<button onclick="toggleQuotes()">Previous quotes</button>
-
-<div id="quoteHistory" style="display:none;">
-<p>19/03/2026 - Everything just went to shit - Bertil</p>
-<p>17/03/2026 - Så lukker de for olien - Lars</p>
-<p>16/03/2026 - Lad være med at tegne - Stig</p>
-</div>
+<div class="input-box">
+    <input id="text" placeholder="Fx: Der Hund beißt den Mann">
+    <button onclick="analyze()">Analyser</button>
 </div>
 
-<div id="chat"></div>
-<div id="typingIndicator"></div>
-
-<div id="inputBar">
-<input id="name" placeholder="Your name">
-<input id="message" placeholder="Enter a sentence..." onkeypress="if(event.key==='Enter') send()">
-<button onclick="send()">Send</button>
-</div>
+<div id="result"></div>
 
 </div>
 
 <script>
 
-function login(){
-    document.getElementById("login").style.display = "none";
-    document.getElementById("app").style.display = "block";
-}
+async function analyze(){
+    const text = document.getElementById("text").value;
 
-/* ADD MESSAGE TO CHAT */
-function addMessage(sender, text){
-    const chat = document.getElementById("chat");
+    if(!text) return;
 
-    const msg = document.createElement("div");
-    msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
-    msg.style.margin = "5px 0";
+    const resultDiv = document.getElementById("result");
+    resultDiv.innerHTML = "Analyserer...";
 
-    chat.appendChild(msg);
-    chat.scrollTop = chat.scrollHeight;
-}
-
-/* ANALYZE KASUS */
-async function analyzeKasus(text){
     try{
         const res = await fetch("http://127.0.0.1:5000/analyze", {
             method: "POST",
@@ -79,49 +44,35 @@ async function analyzeKasus(text){
             body: JSON.stringify({text})
         });
 
-        return await res.json();
+        const data = await res.json();
+
+        if(!data.analysis){
+            resultDiv.innerHTML = "Kunne ikke analysere teksten.";
+            return;
+        }
+
+        let html = `<div class="language">Sprog: ${data.language}</div>`;
+
+        html += `<div class="words">`;
+
+        data.analysis.forEach(w => {
+            let kasus = w.features || w.case || "—";
+
+            html += `
+            <div class="word">
+                <div class="word-text">${w.word}</div>
+                <div class="word-case">${kasus}</div>
+            </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        resultDiv.innerHTML = html;
+
     }catch(err){
-        return null;
+        resultDiv.innerHTML = "Fejl ved forbindelse til server.";
     }
-}
-
-/* SEND MESSAGE */
-async function send(){
-    const name = document.getElementById("name").value || "User";
-    const message = document.getElementById("message").value;
-
-    if(!message) return;
-
-    addMessage(name, message);
-    document.getElementById("message").value = "";
-
-    document.getElementById("typingIndicator").innerText = "Kasus AI is analyzing...";
-
-    const data = await analyzeKasus(message);
-
-    document.getElementById("typingIndicator").innerText = "";
-
-    if(!data || !data.analysis){
-        addMessage("Kasus AI", "Error analyzing sentence.");
-        return;
-    }
-
-    let result = data.analysis.map(w => {
-        let caseInfo = w.features || w.case || "-";
-
-        return `<span class="word">
-            <strong>${w.word}</strong>
-            <span class="case">${caseInfo}</span>
-        </span>`;
-    }).join(" ");
-
-    addMessage("Kasus AI", result);
-}
-
-/* QUOTES */
-function toggleQuotes(){
-    const box = document.getElementById("quoteHistory");
-    box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
 </script>
