@@ -1,154 +1,130 @@
-#name{
-width:120px;
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kasus AI</title>
+<link rel="icon" type="image/x-icon" href="icon.ico">
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div id="login">
+<h2>Enter Password</h2>
+<input id="password" type="password">
+<button onclick="login()">Enter</button>
+</div>
+
+<div id="app" style="display:none;">
+
+<h1>Kasus AI</h1>
+<p class="subtitle">Analyze grammatical case (German, Latin, Danish)</p>
+
+<div id="onlineCount">0 users online</div>
+
+<div id="quoteBox">
+<h3>Quote of the Day</h3>
+
+<p id="quoteText">
+Indtil videre, ingen ny quote...
+</p>
+
+<button onclick="toggleQuotes()">Previous quotes</button>
+
+<div id="quoteHistory" style="display:none;">
+<p>19/03/2026 - Everything just went to shit - Bertil</p>
+<p>17/03/2026 - Så lukker de for olien - Lars</p>
+<p>16/03/2026 - Lad være med at tegne - Stig</p>
+</div>
+</div>
+
+<div id="chat"></div>
+<div id="typingIndicator"></div>
+
+<div id="inputBar">
+<input id="name" placeholder="Your name">
+<input id="message" placeholder="Enter a sentence..." onkeypress="if(event.key==='Enter') send()">
+<button onclick="send()">Send</button>
+</div>
+
+</div>
+
+<script>
+
+function login(){
+    document.getElementById("login").style.display = "none";
+    document.getElementById("app").style.display = "block";
 }
 
-#message{
-flex:1;
-max-width:305px;
+/* ADD MESSAGE TO CHAT */
+function addMessage(sender, text){
+    const chat = document.getElementById("chat");
+
+    const msg = document.createElement("div");
+    msg.innerHTML = `<strong>${sender}:</strong> ${text}`;
+    msg.style.margin = "5px 0";
+
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
 }
 
-button{
-width:90px;
-padding:10px;
+/* ANALYZE KASUS */
+async function analyzeKasus(text){
+    try{
+        const res = await fetch("http://127.0.0.1:5000/analyze", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({text})
+        });
+
+        return await res.json();
+    }catch(err){
+        return null;
+    }
 }
 
-body{
-font-family: Arial;
-background:#111;
-color:white;
-text-align:center;
-margin:0;
-overflow-x:hidden;
+/* SEND MESSAGE */
+async function send(){
+    const name = document.getElementById("name").value || "User";
+    const message = document.getElementById("message").value;
+
+    if(!message) return;
+
+    addMessage(name, message);
+    document.getElementById("message").value = "";
+
+    document.getElementById("typingIndicator").innerText = "Kasus AI is analyzing...";
+
+    const data = await analyzeKasus(message);
+
+    document.getElementById("typingIndicator").innerText = "";
+
+    if(!data || !data.analysis){
+        addMessage("Kasus AI", "Error analyzing sentence.");
+        return;
+    }
+
+    let result = data.analysis.map(w => {
+        let caseInfo = w.features || w.case || "-";
+
+        return `<span class="word">
+            <strong>${w.word}</strong>
+            <span class="case">${caseInfo}</span>
+        </span>`;
+    }).join(" ");
+
+    addMessage("Kasus AI", result);
 }
 
-#app{
-max-width:900px;
-margin:auto;
-padding:20px;
-padding-right:0px;
+/* QUOTES */
+function toggleQuotes(){
+    const box = document.getElementById("quoteHistory");
+    box.style.display = box.style.display === "none" ? "block" : "none";
 }
 
-#inputBar{
-display:flex;
-justify-content:center;
-align-items:center;
-gap:10px;
-margin-top:10px;
-flex-wrap:wrap;
-}
+</script>
 
-#chat{
-width:100%;
-max-width:600px;
-margin:20px auto;
-height:300px;
-overflow-y:auto;
-border:1px solid #444;
-padding:10px;
-box-sizing:border-box;
-}
-
-input{
-padding:10px;
-margin:5px;
-}
-
-#flemming {
-  display: none;
-  position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 200px;
-}
-
-#stig {
-  display: none;
-  position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 150px;
-}
-
-#quoteBox{
-position:fixed;
-top:138px;
-right:50px;
-width:220px;
-background:#1b1b1b;
-border:1px solid #444;
-padding:15px;
-border-radius:8px;
-text-align:left;
-}
-
-#quoteBox h3{
-margin-top:0;
-font-size:18px;
-}
-
-#quoteText::before { content: "“"; }
-#quoteText::after { content: "”"; }
-
-#quoteText{
-font-style:italic;
-}
-
-#typingIndicator{
-height:20px;
-color:#aaa;
-font-style:italic;
-margin-bottom:10px;
-}
-
-#quoteHistory{
-max-height:120px;
-overflow-y:auto;
-}
-
-@media (max-width:700px){
-
-#quoteBox{
-display:none;
-position:static;
-width:100%;
-margin:20px 0;
-}
-
-#chat{
-height:300px;
-}
-
-#inputBar{
-flex-direction:column;
-}
-
-#name,#message{
-width:90%;
-max-width:none;
-}
-
-button{
-width:120px;
-}
-
-}
-
-#uploadArea{
-border:2px dashed #555;
-padding:10px;
-margin:15px auto;
-max-width:400px;
-border-radius:10px;
-color:#aaa;
-cursor:pointer;
-}
-
-#uploadArea:hover{
-border-color:#888;
-}
-
-#imageInput{
-display:none;
-}
+</body>
+</html>
