@@ -31,17 +31,16 @@ Indtast et ord eller en sætning (tysk, latin eller dansk)
 
 async function analyze(){
     const text = document.getElementById("text").value;
-
     if(!text) return;
 
     const resultDiv = document.getElementById("result");
     resultDiv.innerHTML = "Analyserer...";
 
-    try{
-        const res = await fetch("https://kasuscheckerbackend.onrender.com/", {
+    try {
+        const res = await fetch("https://kasuscheckerbackend.onrender.com/analyze", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({text})
+            body: JSON.stringify({ text })
         });
 
         const data = await res.json();
@@ -52,25 +51,22 @@ async function analyze(){
         }
 
         let html = `<div class="language">Sprog: ${data.language}</div>`;
-
         html += `<div class="words">`;
 
         data.analysis.forEach(w => {
             let kasus = w.features || w.case || "—";
-
             html += `
             <div class="word">
                 <div class="word-text">${w.word}</div>
                 <div class="word-case">${kasus}</div>
-            </div>
-            `;
+            </div>`;
         });
 
         html += `</div>`;
-
         resultDiv.innerHTML = html;
 
-    }catch(err){
+    } catch(err) {
+        console.error(err);
         resultDiv.innerHTML = "Fejl ved forbindelse til server.";
     }
 }
